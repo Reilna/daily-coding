@@ -62,6 +62,7 @@ public class FileTask {
             System.err.println("Не удалось обработать файл! Причина: " + e.getMessage());
         }
 
+        // Create a directory and write a user file
         Path directory = Path.of("data");
         Path userFile = directory.resolve("user.txt");
 
