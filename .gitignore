@@ -1,4 +1,14 @@
-*.class
+# IntelliJ IDEA
 .idea/
 *.iml
 out/
+
+# Java compiled files
+*.class
+
+# Files generated during FileTask
+data/
+message.txt
+user.txt
+log.txt
+events.log
