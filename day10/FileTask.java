@@ -14,6 +14,7 @@ public class FileTask {
             System.err.println("Не удалось обработать файл! Причина: " + e.getMessage());
         }
 
+        // Create user.txt if missing; otherwise read its contents
         Path path1 = Path.of("user.txt");
         try {
             if (!Files.exists(path1)) {
