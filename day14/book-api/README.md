@@ -20,6 +20,21 @@ REST API для управления книгами.
 3. Запустить класс `BookApiApplication`.
 4. API будет доступен по адресу `http://localhost:8080`.
 
+## Запуск через Docker
+
+1. Понадобится `Java 21` и запущенный `Docker Desktop`.
+2. Указать пароль от `БД` как `DB_PASSWORD`, можно прописать в `.env` рядом с `compose.yml`.
+3. Собрать приложение и запустить контейнеры.
+
+```shell
+.\mvnw.cmd clean package
+docker compose up -d --build
+```
+4. API доступен по адресу `http://localhost:8080/books`.
+5. Остановить проект можно с помощью `docker compose down`.
+6. Данные от `PostgreSQL` сохраняются в volume между запусками. Команда `docker compose down -v` удаляет volume вместе с данными.
+7. Команды выполняются из папки `day14/book-api`.
+
 ## Тесты
 
 - Тесты используют `H2` в памяти и не требуют запущенной `PostgreSQL`.
