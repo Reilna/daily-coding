@@ -24,6 +24,7 @@ services:
     image: book-api:1.0
     container_name: book-api
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       DB_PASSWORD: ${DB_PASSWORD}
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/java_learning
       SPRING_DATASOURCE_USERNAME: postgres
