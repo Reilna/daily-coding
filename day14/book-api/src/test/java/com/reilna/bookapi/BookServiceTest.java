@@ -8,15 +8,19 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class BookServiceTest {
 
     @Mock
     private BookRepository bookRepository;
+
+    @Mock
+    private BookApiProperties bookApiProperties;
 
     @Test
     void shouldFindBookById() {
@@ -25,7 +29,7 @@ class BookServiceTest {
         when(bookRepository.findById(1L))
                 .thenReturn(java.util.Optional.of(book));
 
-        BookService bookService = new BookService(bookRepository);
+        BookService bookService = new BookService(bookRepository, bookApiProperties);
 
         Book result = bookService.findById(1L);
 
@@ -38,7 +42,7 @@ class BookServiceTest {
         when(bookRepository.findById(999L))
                 .thenReturn(java.util.Optional.empty());
 
-        BookService bookService = new BookService(bookRepository);
+        BookService bookService = new BookService(bookRepository, bookApiProperties);
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -56,11 +60,52 @@ class BookServiceTest {
         when(bookRepository.findByAuthorIgnoreCase("Иван"))
                 .thenReturn(List.of(firstBook));
 
-        BookService bookService = new BookService(bookRepository);
+        BookService bookService = new BookService(bookRepository, bookApiProperties);
 
         List<Book> result = bookService.findAll("Иван");
 
         assertEquals(1, result.size());
         assertEquals("Иван", result.get(0).getAuthor());
+    }
+
+    @Test
+    void shouldRejectAuthorThatIsTooLong() {
+        when(bookApiProperties.getMaxAuthorLength())
+                .thenReturn(3);
+
+        BookService bookService = new BookService(bookRepository, bookApiProperties);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> bookService.create("Java", "Иван")
+        );
+
+        assertEquals(400, exception.getStatusCode().value());
+    }
+
+    @Test
+    void shouldRejectLongAuthorOnUpdate() {
+        when(bookApiProperties.getMaxAuthorLength())
+                .thenReturn(3);
+
+        BookService bookService = new BookService(bookRepository, bookApiProperties);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> bookService.update(1L, "Java", "Иван"));
+
+        assertEquals(400, exception.getStatusCode().value());
+    }
+
+    @Test
+    void shouldAcceptAuthorAtMaximumLength() {
+        when(bookApiProperties.getMaxAuthorLength())
+                .thenReturn(4);
+
+        BookService bookService = new BookService(bookRepository, bookApiProperties);
+
+        assertDoesNotThrow(() ->
+                bookService.create("Java", "Иван")
+        );
     }
 }

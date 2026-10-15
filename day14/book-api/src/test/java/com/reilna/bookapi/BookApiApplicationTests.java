@@ -52,4 +52,13 @@ class BookApiApplicationTests {
         assertThat(bookRepository.findById(saved.getId())).isEmpty();
     }
 
+    @Autowired
+    private BookApiProperties bookApiProperties;
+
+    @Test
+    void shouldLoadBookApiProperties() {
+        assertThat(bookApiProperties.getMaxAuthorLength())
+                .isEqualTo(100);
+    }
+
 }

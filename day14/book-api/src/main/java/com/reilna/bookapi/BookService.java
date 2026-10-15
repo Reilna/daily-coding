@@ -10,10 +10,15 @@ import java.util.List;
 @Service
 public class BookService {
 
+    private final BookApiProperties bookApiProperties;
+
     private final BookRepository bookRepository;
 
-    public BookService(BookRepository bookRepository) {
+    public BookService(
+            BookRepository bookRepository,
+            BookApiProperties bookApiProperties) {
         this.bookRepository = bookRepository;
+        this.bookApiProperties = bookApiProperties;
     }
 
     public List<Book> findAll(String author) {
@@ -32,6 +37,7 @@ public class BookService {
     }
 
     public Book create(String title, String author) {
+        validateAuthor(author);
         Book book = new Book(null, title, author);
         return bookRepository.save(book);
     }
@@ -42,7 +48,17 @@ public class BookService {
         bookRepository.delete(book);
     }
 
+    private void validateAuthor(String author) {
+        if (author.length() > bookApiProperties.getMaxAuthorLength()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Имя автора слишком длинное"
+            );
+        }
+    }
+
     public Book update(Long id, String title, String author) {
+        validateAuthor(author);
         Book existingBook = findById(id);
 
         existingBook.setTitle(title);
