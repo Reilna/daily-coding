@@ -43,6 +43,14 @@ docker compose up -d --build
 7. Данные от `PostgreSQL` сохраняются в volume между запусками. Команда `docker compose down -v` удаляет volume вместе с данными.
 8. Команды выполняются из папки `day14/book-api`.
 
+## Healthcheck
+
+- `/actuator/health` - общий статус приложения и подключений.
+- `/actuator/health/liveness` - приложение запущено.
+- `/actuator/health/readiness` - приложение готово принимать запросы и подключено к PostgreSql.
+- Docker проверяет readiness каждые 10 секунд.
+- Если PostgreSQL недоступна, `app` получает статус `unhealthy`.
+
 ## Тесты
 
 - Интеграционные тесты используют профиль `test` и `H2` в памяти и не требуют запущенной `PostgreSQL`.
