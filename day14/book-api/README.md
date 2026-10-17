@@ -67,6 +67,13 @@ docker compose up -d --build
 - Grafana использует Prometheus как источник данных.
 - Dashboard показывает скорость HTTP-запросов и ошибки API.
 
+## Grafana provisioning
+
+- Источник Prometheus настраивается через `grafana/provisioning/datasources/prometheus.yml`.
+- Dashboards загружается из `grafana/dashboards/book-api-monitoring.json`.
+- Конфигурация dashboard описана в `grafana/provisioning/dashboards/dashboards.yml`.
+- Grafana доступна по адресу `http://localhost:3000`.
+
 ## Тесты
 
 - Интеграционные тесты используют профиль `test` и `H2` в памяти и не требуют запущенной `PostgreSQL`.
