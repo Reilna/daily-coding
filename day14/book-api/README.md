@@ -51,6 +51,14 @@ docker compose up -d --build
 - Docker проверяет readiness каждые 10 секунд.
 - Если PostgreSQL недоступна, `app` получает статус `unhealthy`.
 
+## Prometheus
+
+- Prometheus запускается отдельным Docker-сервисом.
+- Конфигурация находится в `prometheus.yml`.
+- Prometheus собирает метрики из `/actuator/prometheus`.
+- Веб-интерфейс доступен по адресу `http://localhost:9091`.
+- Внутри Docker Prometheus работает на порту `9090`.
+
 ## Тесты
 
 - Интеграционные тесты используют профиль `test` и `H2` в памяти и не требуют запущенной `PostgreSQL`.
