@@ -59,6 +59,14 @@ docker compose up -d --build
 - Веб-интерфейс доступен по адресу `http://localhost:9091`.
 - Внутри Docker Prometheus работает на порту `9090`.
 
+## Monitoring
+
+- Prometheus собирает метрики из `/actuator/prometheus`.
+- Prometheus UI: `http://localhost:9091`.
+- Grafana: `http://localhost:3000`.
+- Grafana использует Prometheus как источник данных.
+- Dashboard показывает скорость HTTP-запросов и ошибки API.
+
 ## Тесты
 
 - Интеграционные тесты используют профиль `test` и `H2` в памяти и не требуют запущенной `PostgreSQL`.

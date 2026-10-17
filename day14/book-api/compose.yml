@@ -49,5 +49,15 @@ services:
     depends_on:
       app:
         condition: service_healthy
+  grafana:
+    image: grafana/grafana:latest
+    container_name: book-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
 volumes:
   postgres_data:
+  grafana_data:
