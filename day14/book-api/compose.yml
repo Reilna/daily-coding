@@ -44,6 +44,7 @@ services:
     container_name: book_prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     ports:
       - "9091:9090"
     depends_on:
@@ -63,3 +64,4 @@ services:
 volumes:
   postgres_data:
   grafana_data:
+  prometheus_data:

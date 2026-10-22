@@ -1,5 +1,7 @@
 package com.reilna.bookapi;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,11 +16,15 @@ public class BookService {
 
     private final BookRepository bookRepository;
 
+    private final Counter booksCreatedCounter;
+
     public BookService(
             BookRepository bookRepository,
-            BookApiProperties bookApiProperties) {
+            BookApiProperties bookApiProperties,
+            MeterRegistry meterRegistry) {
         this.bookRepository = bookRepository;
         this.bookApiProperties = bookApiProperties;
+        this.booksCreatedCounter = meterRegistry.counter("books.created");
     }
 
     public List<Book> findAll(String author) {
@@ -39,7 +45,9 @@ public class BookService {
     public Book create(String title, String author) {
         validateAuthor(author);
         Book book = new Book(null, title, author);
-        return bookRepository.save(book);
+        Book savedBook = bookRepository.save(book);
+        this.booksCreatedCounter.increment();
+        return savedBook;
     }
 
     public void deleteById(Long id) {

@@ -1,5 +1,6 @@
 package com.reilna.bookapi;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,7 +30,7 @@ class BookServiceTest {
         when(bookRepository.findById(1L))
                 .thenReturn(java.util.Optional.of(book));
 
-        BookService bookService = new BookService(bookRepository, bookApiProperties);
+        BookService bookService = new BookService(bookRepository, bookApiProperties, new SimpleMeterRegistry());
 
         Book result = bookService.findById(1L);
 
@@ -42,7 +43,7 @@ class BookServiceTest {
         when(bookRepository.findById(999L))
                 .thenReturn(java.util.Optional.empty());
 
-        BookService bookService = new BookService(bookRepository, bookApiProperties);
+        BookService bookService = new BookService(bookRepository, bookApiProperties, new SimpleMeterRegistry());
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -60,7 +61,7 @@ class BookServiceTest {
         when(bookRepository.findByAuthorIgnoreCase("Иван"))
                 .thenReturn(List.of(firstBook));
 
-        BookService bookService = new BookService(bookRepository, bookApiProperties);
+        BookService bookService = new BookService(bookRepository, bookApiProperties, new SimpleMeterRegistry());
 
         List<Book> result = bookService.findAll("Иван");
 
@@ -73,7 +74,7 @@ class BookServiceTest {
         when(bookApiProperties.getMaxAuthorLength())
                 .thenReturn(3);
 
-        BookService bookService = new BookService(bookRepository, bookApiProperties);
+        BookService bookService = new BookService(bookRepository, bookApiProperties, new SimpleMeterRegistry());
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -88,7 +89,7 @@ class BookServiceTest {
         when(bookApiProperties.getMaxAuthorLength())
                 .thenReturn(3);
 
-        BookService bookService = new BookService(bookRepository, bookApiProperties);
+        BookService bookService = new BookService(bookRepository, bookApiProperties, new SimpleMeterRegistry());
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -102,7 +103,7 @@ class BookServiceTest {
         when(bookApiProperties.getMaxAuthorLength())
                 .thenReturn(4);
 
-        BookService bookService = new BookService(bookRepository, bookApiProperties);
+        BookService bookService = new BookService(bookRepository, bookApiProperties, new SimpleMeterRegistry());
 
         assertDoesNotThrow(() ->
                 bookService.create("Java", "Иван")
