@@ -2,12 +2,12 @@ package com.reilna.bookapi;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class BookService {
@@ -27,12 +27,32 @@ public class BookService {
         this.booksCreatedCounter = meterRegistry.counter("books.created");
     }
 
-    public List<Book> findAll(String author) {
-        if("Все".equalsIgnoreCase(author)) {
-            return bookRepository.findAll();
+    public Page<Book> findAll(String author, String title, Pageable pageable) {
+        boolean authorIsEmpty =
+                author == null
+                        || author.isBlank()
+                        || "Все".equalsIgnoreCase(author);
+
+        boolean titleIsEmpty =
+                title == null || title.isBlank();
+
+        if (authorIsEmpty && titleIsEmpty) {
+            return bookRepository.findAll(pageable);
         }
 
-        return bookRepository.findByAuthorIgnoreCase(author);
+        if (authorIsEmpty) {
+            return bookRepository.findByTitleContainingIgnoreCase(title.trim(), pageable);
+        }
+
+        if (titleIsEmpty) {
+            return bookRepository.findByAuthorContainingIgnoreCase(author.trim(), pageable);
+        }
+
+        return bookRepository.findByAuthorContainingIgnoreCaseAndTitleContainingIgnoreCase(
+                author.trim(),
+                title.trim(),
+                pageable
+        );
     }
 
 

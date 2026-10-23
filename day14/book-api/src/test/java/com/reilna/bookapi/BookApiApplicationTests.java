@@ -1,12 +1,13 @@
 package com.reilna.bookapi;
 
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,13 +25,14 @@ class BookApiApplicationTests {
 
     @Test
     @Transactional
-    void shouldFindBooksByAuthorIgnoringCase(){
+    void shouldFindBooksByAuthorContainingIgnoringCase(){
         bookRepository.save(new Book(null, "Java", "Иван"));
 
-        List<Book> foundBooks = bookRepository.findByAuthorIgnoreCase("иван");
+        Page<Book> foundBooks = bookRepository.findByAuthorContainingIgnoreCase(
+                "ван", PageRequest.of(0, 10));
 
-        assertThat(foundBooks).hasSize(1);
-        assertThat(foundBooks.getFirst().getTitle()).isEqualTo("Java");
+        assertThat(foundBooks.getContent()).hasSize(1);
+        assertThat(foundBooks.getContent().getFirst().getTitle()).isEqualTo("Java");
     }
 
     @Test

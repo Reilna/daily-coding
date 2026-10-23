@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -13,6 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 
 @ExtendWith(MockitoExtension.class)
 class BookServiceTest {
@@ -53,20 +59,22 @@ class BookServiceTest {
         assertEquals(404, exception.getStatusCode().value());
     }
 
+
     @Test
     void shouldFilterBookByAuthor() {
         Book firstBook = new Book(1L, "Java", "Иван");
         Book secondBook = new Book(2L, "Spring", "Анна");
+        PageRequest pageable = PageRequest.of(0, 10);
 
-        when(bookRepository.findByAuthorIgnoreCase("Иван"))
-                .thenReturn(List.of(firstBook));
+        when(bookRepository.findByAuthorContainingIgnoreCase("Иван", pageable))
+                .thenReturn(new PageImpl<>(List.of(firstBook), pageable, 1));
 
         BookService bookService = new BookService(bookRepository, bookApiProperties, new SimpleMeterRegistry());
 
-        List<Book> result = bookService.findAll("Иван");
+        Page<Book> foundBooks = bookService.findAll("Иван", "", pageable);
 
-        assertEquals(1, result.size());
-        assertEquals("Иван", result.get(0).getAuthor());
+        assertThat(foundBooks.getContent()).hasSize(1);
+        assertThat(foundBooks.getContent().getFirst().getTitle()).isEqualTo("Java");
     }
 
     @Test

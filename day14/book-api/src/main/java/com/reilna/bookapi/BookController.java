@@ -3,10 +3,12 @@ package com.reilna.bookapi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 import jakarta.validation.Valid;
 
@@ -27,15 +29,18 @@ public class BookController {
 
     @Operation(
             summary = "Получить список книг",
-            description = "Возвращает список книг с возможной фильтрацией по автору"
+            description = "Возвращает список книг с фильтрацией по автору и названию"
     )
     @ApiResponse(
             responseCode = "200",
             description = "Список книг успешно получен"
     )
     @GetMapping("/books")
-    public List<Book> getBooks(@RequestParam(defaultValue = "Все") String author)  {
-        return bookService.findAll(author);
+    public Page<Book> getBooks(
+            @RequestParam(defaultValue = "Все") String author,
+            @RequestParam(defaultValue = "") String title,
+            @PageableDefault(sort = "id") Pageable pageable)  {
+        return bookService.findAll(author, title, pageable);
     }
 
     @Operation(

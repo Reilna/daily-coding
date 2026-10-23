@@ -12,6 +12,11 @@ REST API для управления книгами.
 - Maven
 - JUnit 5
 - Mockito
+- OpenAPI 3
+- Swagger UI
+- Flyway
+- Prometheus
+- Grafana
 
 ## Запуск
 
@@ -38,9 +43,16 @@ $env:DB_PASSWORD="пароль"
 .\mvnw.cmd clean package
 docker compose up -d --build
 ```
+Сервисы:
+
+- Book API: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+- Prometheus: http://localhost:9091
+- Grafana: http://localhost:3000
+
 5. API доступен по адресу `http://localhost:8080/books`.
 6. Остановить проект можно с помощью `docker compose down`.
-7. Данные от `PostgreSQL` сохраняются в volume между запусками. Команда `docker compose down -v` удаляет volume вместе с данными.
+7. Данные от `PostgreSQL` сохраняются в volume между запусками. Команда `docker compose down -v` удаляет volumes PostgreSQL, Grafana и Prometheus вместе с сохранёнными данными и историей метрик.
 8. Команды выполняются из папки `day14/book-api`.
 
 ## Healthcheck
@@ -66,6 +78,9 @@ docker compose up -d --build
 - Grafana: `http://localhost:3000`.
 - Grafana использует Prometheus как источник данных.
 - Dashboard показывает скорость HTTP-запросов и ошибки API.
+- `books_total` - количество успешно созданных книг.
+- Пример PromQL: `rate(books_total[1m])`.
+- История Prometheus сохраняется в volume `prometheus_data`.
 
 ## Grafana provisioning
 
@@ -92,7 +107,33 @@ docker compose up -d --build
 | PUT | `/books/{id}` | Обновить книгу |
 | DELETE | `/books/{id}` | Удалить книгу |
 
-Фильтрация по автору: `GET /books?author=name%20surname`
+## Пагинация, сортировка и фильтрация
+
+Endpoint `GET /books` поддерживает параметры:
+
+- `author` - поиск по части имени автора без учёта регистра;
+- `title` - поиск по части названия без учёта регистра;
+- `page` - номер страницы, начиная с `0`;
+- `size` - размер страницы, максимум `100`;
+- `sort` - поле и направление сортировки.
+
+Примеры:
+
+```text
+GET /books?page=0&size=10
+GET /books?author=ив&page=0&size=10
+GET /books?title=java&page=0&size=10
+GET /books?author=ив&title=java&sort=title,asc
+```
+
+## Swagger / OpenAPI
+
+Интерактивная документация API:
+
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
+
+Swagger позволяет просматривать endpoints и отправлять запросы через браузер.
 
 ## Пример создания книги
 
