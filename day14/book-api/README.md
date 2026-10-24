@@ -17,10 +17,11 @@ REST API для управления книгами.
 - Flyway
 - Prometheus
 - Grafana
+- Testcontainers
 
 ## Запуск
 
-Есть 3 профиля: `dev` для локального PostgreSQL, `test` для запуска тестов с H2, `prod` для PostgreSQL в Docker.
+Есть 3 профиля: `dev` для локального PostgreSQL, `test` для PostgreSQL в Testcontainers, `prod` для PostgreSQL в Docker.
 1. Создать базу данных `java_learning` в PostgreSQL на `localhost:5432` с пользователем `postgres`.
 2. Указать переменную окружения `DB_PASSWORD`, можно задать в конфигурации запуска IntelliJ.
 ```powershell
@@ -91,7 +92,9 @@ docker compose up -d --build
 
 ## Тесты
 
-- Интеграционные тесты используют профиль `test` и `H2` в памяти и не требуют запущенной `PostgreSQL`.
+- Интеграционные тесты используют профиль `test` и PostgreSQL в Testcontainers.
+- Flyway применяет миграции, а Hibernate проверяет схему через `ddl-auto=validate`.
+- Для запуска тестов требуется запущенный Docker Desktop.
 
 ```powershell
 .\mvnw.cmd test
