@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -14,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -123,5 +125,38 @@ class BookControllerTest {
         verify(bookService).findAll(eq("Все"), eq(""), pageableCaptor.capture());
 
         assertEquals(100, pageableCaptor.getValue().getPageSize());
+    }
+
+    @Test
+    void shouldPassFiltersPaginationAndSortingToService() throws Exception {
+        when(bookService.findAll(
+                eq("ив"),
+                eq("java"),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/books")
+                .param("author", "ив")
+                .param("title", "java")
+                .param("page", "0")
+                .param("size", "10")
+                .param("sort", "title,asc"));
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+        verify(bookService).findAll(
+                eq("ив"),
+                eq("java"),
+                pageableCaptor.capture()
+        );
+
+        Pageable pageable = pageableCaptor.getValue();
+
+        assertEquals(0, pageable.getPageNumber());
+        assertEquals(10, pageable.getPageSize());
+        assertEquals(
+                Sort.by(Sort.Direction.ASC, "title"),
+                pageable.getSort()
+        );
     }
 }
