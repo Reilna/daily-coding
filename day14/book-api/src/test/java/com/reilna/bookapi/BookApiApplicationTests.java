@@ -3,6 +3,7 @@ package com.reilna.bookapi;
 import jakarta.transaction.Transactional;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,7 +14,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.util.Optional;
+import java.util.List;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
@@ -71,6 +74,35 @@ class BookApiApplicationTests {
     void shouldLoadBookApiProperties() {
         assertThat(bookApiProperties.getMaxAuthorLength())
                 .isEqualTo(100);
+    }
+
+    @Test
+    @Transactional
+    void shouldFindBooksByTitleWithPaginationAndSorting() {
+        bookRepository.saveAll(List.of(
+                new Book(null, "Java C", "Автор 1"),
+                new Book(null, "Java A", "Автор 2"),
+                new Book(null, "Java B", "Автор 3")
+        ));
+
+        Page<Book> foundBooks =
+                bookRepository.findByTitleContainingIgnoreCase(
+                        "java",
+                        PageRequest.of(
+                                0,
+                                2,
+                                Sort.by(Sort.Direction.ASC, "title")
+                        )
+                );
+
+        assertThat(foundBooks.getTotalElements()).isEqualTo(3);
+        assertThat(foundBooks.getNumberOfElements()).isEqualTo(2);
+        assertThat(foundBooks.hasNext()).isTrue();
+
+        assertThat(foundBooks.getContent().get(0).getTitle())
+                .isEqualTo("Java A");
+        assertThat(foundBooks.getContent().get(1).getTitle())
+                .isEqualTo("Java B");
     }
 
 }
