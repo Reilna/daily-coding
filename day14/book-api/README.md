@@ -19,6 +19,12 @@ REST API для управления книгами.
 - Grafana
 - Testcontainers
 
+## CI
+
+GitHub Actions автоматически запускает сборку и все тесты после каждого `push` и Pull Request.
+Workflow находится в `.github/workflows/ci.yml`.
+Интеграционные тесты используют PostgreSQL в Testcontainers, поэтому Github Actions запускает тесты на реальной PostgreSQL в Docker.
+
 ## Запуск
 
 Есть 3 профиля: `dev` для локального PostgreSQL, `test` для PostgreSQL в Testcontainers, `prod` для PostgreSQL в Docker.
@@ -95,6 +101,7 @@ docker compose up -d --build
 - Интеграционные тесты используют профиль `test` и PostgreSQL в Testcontainers.
 - Flyway применяет миграции, а Hibernate проверяет схему через `ddl-auto=validate`.
 - Для запуска тестов требуется запущенный Docker Desktop.
+- Те же тесты автоматически запускаются в GitHub Actions.
 
 ```powershell
 .\mvnw.cmd test
