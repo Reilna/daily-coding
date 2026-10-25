@@ -19,6 +19,16 @@ REST API для управления книгами.
 - Grafana
 - Testcontainers
 
+## Security
+
+- Get-запросы к `/books` доступны без авторизации.
+- POST, PUT и DELETE требуют роль `ADMIN`.
+- Неавторизованный запрос получает `401 Unauthorized`.
+- Авторизованный пользователь без роли `ADMIN` получает `403 Forbidden`.
+- Для локальной проверки используется Basic Authentication:
+    - пользователь: `admin`
+    - пароль: `admin123`
+
 ## CI
 
 GitHub Actions автоматически запускает сборку и все тесты после каждого `push` и Pull Request.
@@ -102,6 +112,7 @@ docker compose up -d --build
 - Flyway применяет миграции, а Hibernate проверяет схему через `ddl-auto=validate`.
 - Для запуска тестов требуется запущенный Docker Desktop.
 - Те же тесты автоматически запускаются в GitHub Actions.
+- MVC-тесты проверяют правила авторизации и ролей.
 
 ```powershell
 .\mvnw.cmd test
