@@ -25,9 +25,8 @@ REST API для управления книгами.
 - POST, PUT и DELETE требуют роль `ADMIN`.
 - Неавторизованный запрос получает `401 Unauthorized`.
 - Авторизованный пользователь без роли `ADMIN` получает `403 Forbidden`.
-- Для локальной проверки используется Basic Authentication:
-    - пользователь: `admin`
-    - пароль: `admin123`
+- Логин администратора и пароль передаются через переменные окружения `ADMIN_USERNAME` и `ADMIN_PASSWORD`.
+- В тестовом профиле используется `admin` и `admin123`.
 
 ## CI
 
@@ -60,6 +59,12 @@ $env:DB_PASSWORD="пароль"
 .\mvnw.cmd clean package
 docker compose up -d --build
 ```
+5. Перед запуском задать переменные администратора:
+
+```powershell
+$env:ADMIN_USERNAME="admin"
+$env:ADMIN_PASSWORD="пароль"
+```
 Сервисы:
 
 - Book API: http://localhost:8080
@@ -67,10 +72,10 @@ docker compose up -d --build
 - Prometheus: http://localhost:9091
 - Grafana: http://localhost:3000
 
-5. API доступен по адресу `http://localhost:8080/books`.
-6. Остановить проект можно с помощью `docker compose down`.
-7. Данные от `PostgreSQL` сохраняются в volume между запусками. Команда `docker compose down -v` удаляет volumes PostgreSQL, Grafana и Prometheus вместе с сохранёнными данными и историей метрик.
-8. Команды выполняются из папки `day14/book-api`.
+6. API доступен по адресу `http://localhost:8080/books`.
+7. Остановить проект можно с помощью `docker compose down`.
+8. Данные от `PostgreSQL` сохраняются в volume между запусками. Команда `docker compose down -v` удаляет volumes PostgreSQL, Grafana и Prometheus вместе с сохранёнными данными и историей метрик.
+9. Команды выполняются из папки `day14/book-api`.
 
 ## Healthcheck
 

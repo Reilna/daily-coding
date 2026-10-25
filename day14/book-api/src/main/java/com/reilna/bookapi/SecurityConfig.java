@@ -11,10 +11,21 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final String adminUsername;
+    private final String adminPassword;
+
+    public SecurityConfig(
+            @Value("${security.admin.username}") String adminUsername,
+            @Value("${security.admin.password}") String adminPassword) {
+        this.adminUsername = adminUsername;
+        this.adminPassword = adminPassword;
+    }
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -39,8 +50,8 @@ public class SecurityConfig {
 
     @Bean
     InMemoryUserDetailsManager users() {
-        UserDetails admin = User.withUsername("admin")
-                .password("{noop}admin123")
+        UserDetails admin = User.withUsername(adminUsername)
+                .password("{noop}" + adminPassword)
                 .roles("ADMIN")
                 .build();
 
