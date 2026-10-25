@@ -165,4 +165,25 @@ class BookControllerTest {
                 pageable.getSort()
         );
     }
+
+    @Test
+    void shouldRejectUnauthenticatedCreateBook() throws Exception {
+        CreateBookRequest request = new CreateBookRequest("Java", "Иван");
+
+        mockMvc.perform(post("/books")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "reader", roles = "USER")
+    void shouldRejectBookCreationForNonAdmin() throws Exception {
+        CreateBookRequest request = new CreateBookRequest("Java", "Иван");
+
+        mockMvc.perform(post("/books")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
 }
