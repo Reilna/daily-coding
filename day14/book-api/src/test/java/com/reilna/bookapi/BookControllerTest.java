@@ -38,6 +38,9 @@ class BookControllerTest {
     @MockitoBean
     private BookService bookService;
 
+    @MockitoBean
+    private AppUserDetailsService appUserDetailsService;
+
     @Test
     void shouldReturnBooks() throws Exception{
         when(bookService.findAll(eq("Все"), eq(""), any(Pageable.class)))
