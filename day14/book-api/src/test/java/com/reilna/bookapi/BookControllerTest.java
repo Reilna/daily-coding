@@ -4,18 +4,19 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
-import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -26,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 @WebMvcTest(BookController.class)
+@Import(SecurityConfig.class)
 class BookControllerTest {
 
     @Autowired
@@ -50,6 +52,7 @@ class BookControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void shouldRejectBlankBook() throws Exception{
         CreateBookRequest request = new CreateBookRequest("", "");
         mockMvc.perform(post("/books")
@@ -60,6 +63,7 @@ class BookControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void shouldCreateBook() throws Exception{
         CreateBookRequest request = new CreateBookRequest("Java", "Иван");
         when(bookService.create("Java", "Иван"))
@@ -87,6 +91,7 @@ class BookControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void shouldDeleteBookSuccessfully() throws Exception{
 
         mockMvc.perform(delete("/books/1"))
@@ -96,6 +101,7 @@ class BookControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
     void shouldUpdateBook() throws Exception{
         CreateBookRequest request = new CreateBookRequest("Java: новое издание", "Иван");
 
