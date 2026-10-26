@@ -110,7 +110,6 @@ class BookApiApplicationTests {
         assertThat(foundBooks.getContent().get(1).getTitle())
                 .isEqualTo("Java B");
     }
-й
     @Test
     @Transactional
     void shouldCreateAdminAndReaderUsers() {
