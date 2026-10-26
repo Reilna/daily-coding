@@ -25,8 +25,10 @@ REST API для управления книгами.
 - POST, PUT и DELETE требуют роль `ADMIN`.
 - Неавторизованный запрос получает `401 Unauthorized`.
 - Авторизованный пользователь без роли `ADMIN` получает `403 Forbidden`.
-- Логин администратора и пароль передаются через переменные окружения `ADMIN_USERNAME` и `ADMIN_PASSWORD`.
-- В тестовом профиле используется `admin` и `admin123`.
+- Credentials администратора передаются через `ADMIN_USERNAME` И `ADMIN_PASSWORD`.
+- Credentials пользователя для чтения передаются через `READER_USERNAME` и `READER_PASSWORD`.
+- Пользователь с ролью `USER` может выполнять GET-запросы, но получает `403 Forbidden` на POST, PUT и DELETE.
+- В тестовом профиле используются `admin` / `admin123` и `reader` / `reader123`.
 
 ## CI
 
@@ -64,6 +66,8 @@ docker compose up -d --build
 ```powershell
 $env:ADMIN_USERNAME="admin"
 $env:ADMIN_PASSWORD="пароль"
+$env:READER_USERNAME="reader"
+$env:READER_PASSWORD="пароль читателя"
 ```
 Сервисы:
 

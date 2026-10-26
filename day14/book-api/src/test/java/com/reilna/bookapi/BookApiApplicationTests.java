@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -16,7 +17,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import java.util.Optional;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
@@ -35,6 +35,12 @@ class BookApiApplicationTests {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Autowired
+    private AppUserRepository appUserRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Test
     @Transactional
@@ -103,6 +109,25 @@ class BookApiApplicationTests {
                 .isEqualTo("Java A");
         assertThat(foundBooks.getContent().get(1).getTitle())
                 .isEqualTo("Java B");
+    }
+й
+    @Test
+    @Transactional
+    void shouldCreateAdminAndReaderUsers() {
+        AppUser admin = appUserRepository.findByUsername("admin")
+                .orElseThrow();
+
+        AppUser reader = appUserRepository.findByUsername("reader")
+                .orElseThrow();
+
+        assertThat(admin.getRole()).isEqualTo("ADMIN");
+        assertThat(reader.getRole()).isEqualTo("USER");
+
+        assertThat(passwordEncoder.matches("admin123", admin.getPasswordHash()))
+                .isTrue();
+
+        assertThat(passwordEncoder.matches("reader123", reader.getPasswordHash()))
+                .isTrue();
     }
 
 }
