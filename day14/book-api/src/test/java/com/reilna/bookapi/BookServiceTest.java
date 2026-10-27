@@ -10,12 +10,16 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.in;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,6 +32,15 @@ class BookServiceTest {
 
     @Mock
     private BookApiProperties bookApiProperties;
+
+    @Mock
+    private BookInstanceRepository bookInstanceRepository;
+
+    @Mock
+    private AppUserRepository appUserRepository;
+
+    @Mock
+    private LoanRepository loanRepository;
 
     @Test
     void shouldFindBookById() {
@@ -116,5 +129,73 @@ class BookServiceTest {
         assertDoesNotThrow(() ->
                 bookService.create("Java", "Иван")
         );
+    }
+
+    @Test
+    void shouldCreateLoanForAvailableBookInstance() {
+        Book book = new Book(1L, "Effective Java", "Joshua Bloch");
+        BookInstance instance = new BookInstance(10L, book, "INV-001");
+        AppUser user = new AppUser(20L, "reader", "hash", "USER");
+
+        when(bookInstanceRepository.findById(10L))
+                .thenReturn(Optional.of(instance));
+        when(appUserRepository.findByUsername("reader"))
+                .thenReturn(Optional.of(user));
+        when(loanRepository.findByBookInstanceIdAndReturnedAtIsNull(10L))
+                .thenReturn(Optional.empty());
+        when(loanRepository.save(org.mockito.ArgumentMatchers.any(Loan.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        LoanService loanService = new LoanService(
+                bookInstanceRepository,
+                appUserRepository,
+                loanRepository
+        );
+
+        Loan result = loanService.createLoan(10L, "reader");
+
+        assertThat(result.getBookInstance()).isEqualTo(instance);
+        assertThat(result.getUser()).isEqualTo(user);
+        assertThat(result.getLoanedAt()).isNotNull();
+        assertThat(result.getReturnedAt()).isNull();
+
+        verify(loanRepository).save(org.mockito.ArgumentMatchers.any(Loan.class));
+    }
+
+    @Test
+    void shouldRejectLoanWhenBookInstanceIsAlreadyActive() {
+        Book book = new Book(1L, "Effective Java", "Joshua Bloch");
+        BookInstance instance = new BookInstance(10L, book, "INV-001");
+        AppUser user = new AppUser(20L, "reader", "hash", "USER");
+
+        Loan activeLoan = new Loan(
+                30L,
+                instance,
+                user,
+                OffsetDateTime.now(),
+                null
+        );
+
+        when(bookInstanceRepository.findById(10L))
+                .thenReturn(Optional.of(instance));
+        when(appUserRepository.findByUsername("reader"))
+                .thenReturn(Optional.of(user));
+        when(loanRepository.findByBookInstanceIdAndReturnedAtIsNull(10L))
+                .thenReturn(Optional.of(activeLoan));
+
+        LoanService loanService = new LoanService(
+                bookInstanceRepository,
+                appUserRepository,
+                loanRepository
+        );
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> loanService.createLoan(10L, "reader")
+        );
+
+        assertEquals(409, exception.getStatusCode().value());
+        verify(loanRepository, org.mockito.Mockito.never())
+                .save(org.mockito.ArgumentMatchers.any(Loan.class));
     }
 }

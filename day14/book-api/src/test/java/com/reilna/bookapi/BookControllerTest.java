@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 @ActiveProfiles("test")
-@WebMvcTest(BookController.class)
+@WebMvcTest({BookController.class, LoanController.class})
 @Import(SecurityConfig.class)
 class BookControllerTest {
 
@@ -37,6 +37,9 @@ class BookControllerTest {
 
     @MockitoBean
     private BookService bookService;
+
+    @MockitoBean
+    private LoanService loanService;
 
     @MockitoBean
     private AppUserDetailsService appUserDetailsService;
@@ -190,5 +193,37 @@ class BookControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldRejectUnauthenticatedLoan() throws Exception {
+        mockMvc.perform(post("/book-instances/10/loans"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(loanService);
+    }
+
+    @Test
+    @WithMockUser(username = "reader", roles = "USER")
+    void shouldCreateLoanForAuthenticatedUser() throws Exception {
+        LoanResponse response = new LoanResponse(
+                30L,
+                10L,
+                "reader",
+                java.time.OffsetDateTime.parse("2026-10-27T12:00:00Z"),
+                null
+        );
+
+        when(loanService.createLoanResponse(10L, "reader"))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/book-instances/10/loans"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(30))
+                .andExpect(jsonPath("$.bookInstanceId").value(10))
+                .andExpect(jsonPath("$.username").value("reader"))
+                .andExpect(jsonPath("$.returnedAt").doesNotExist());
+
+        verify(loanService).createLoanResponse(10L, "reader");
     }
 }

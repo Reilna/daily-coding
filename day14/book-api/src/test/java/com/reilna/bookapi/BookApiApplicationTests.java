@@ -2,11 +2,13 @@ package com.reilna.bookapi;
 
 import jakarta.transaction.Transactional;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -14,13 +16,19 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Testcontainers
 @ActiveProfiles("test")
+@AutoConfigureMockMvc
 @SpringBootTest
 class BookApiApplicationTests {
 
@@ -35,6 +43,15 @@ class BookApiApplicationTests {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private BookInstanceRepository bookInstanceRepository;
+
+    @Autowired
+    private LoanRepository loanRepository;
 
     @Autowired
     private AppUserRepository appUserRepository;
@@ -127,6 +144,66 @@ class BookApiApplicationTests {
 
         assertThat(passwordEncoder.matches("reader123", reader.getPasswordHash()))
                 .isTrue();
+    }
+
+    @Test
+    @Transactional
+    void shouldSaveBookInstanceWithBookRelation() {
+        Book book = bookRepository.save(new Book(null, "Effective Java", "Joshua Bloch"));
+
+        BookInstance instance = bookInstanceRepository.save(new BookInstance(null, book, "INV-001"));
+
+        Optional<BookInstance> found = bookInstanceRepository.findById(instance.getId());
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getInventoryNumber()).isEqualTo("INV-001");
+        assertThat(found.get().getBook().getTitle()).isEqualTo("Effective Java");
+    }
+
+    @Test
+    @Transactional
+    void shouldFindActiveLoanForBookInstance() {
+        Book book = bookRepository.save(new Book(null, "Effective Java", "Joshua Bloch"));
+
+        BookInstance instance = bookInstanceRepository.save(new BookInstance(null, book, "INV-002"));
+
+        AppUser user = appUserRepository.findByUsername("reader")
+                .orElseThrow();
+
+        Loan loan = loanRepository.save(
+                new Loan(
+                        null,
+                        instance,
+                        user,
+                        OffsetDateTime.now(),
+                        null
+                )
+        );
+
+        Optional<Loan> activeLoan = loanRepository.findByBookInstanceIdAndReturnedAtIsNull(instance.getId());
+
+        assertThat(activeLoan).isPresent();
+        assertThat(activeLoan.get().getId()).isEqualTo(loan.getId());
+        assertThat(activeLoan.get().getUser().getUsername())
+                .isEqualTo("reader");
+    }
+
+    @Test
+    void shouldCreateLoanAndRejectSecondActiveLoan() throws Exception {
+        Book book = bookRepository.saveAndFlush(new Book(null, "Effective Java", "Joshua Bloch"));
+
+        BookInstance instance = bookInstanceRepository.saveAndFlush(new BookInstance(null, book, "INV-HTTP-001"));
+
+        mockMvc.perform(post("/book-instances/{id}/loans", instance.getId())
+                .with(httpBasic("reader", "reader123")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.bookInstanceId").value(instance.getId()))
+                .andExpect(jsonPath("$.username").value("reader"))
+                .andExpect(jsonPath("$.returnedAt").doesNotExist());
+
+        mockMvc.perform(post("/book-instances/{id}/loans", instance.getId())
+                .with(httpBasic("reader", "reader123")))
+                .andExpect(status().isConflict());
     }
 
 }
