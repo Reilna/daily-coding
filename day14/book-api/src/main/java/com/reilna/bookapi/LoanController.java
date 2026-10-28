@@ -42,4 +42,23 @@ public class LoanController {
                 authentication.getName()
         );
     }
+
+    @Operation(
+            summary = "Вернуть экземпляр книги",
+            description = "Закрывает активную выдачу текущего пользователя"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Книга возвращена"),
+            @ApiResponse(responseCode = "401", description = "Требуется авторизация"),
+            @ApiResponse(responseCode = "403", description = "Выдача принадлежит другому пользователю"),
+            @ApiResponse(responseCode = "404", description = "Выдача не найдена"),
+            @ApiResponse(responseCode = "409", description = "Книга уже возвращена")
+    })
+    @PostMapping("/loans/{loanId}/return")
+    public LoanResponse returnLoan(
+            @PathVariable Long loanId,
+            Authentication authentication) {
+
+        return loanService.returnLoanResponse(loanId, authentication.getName());
+    }
 }

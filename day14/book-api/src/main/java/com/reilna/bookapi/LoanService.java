@@ -69,4 +69,38 @@ public class LoanService {
                 loan.getReturnedAt()
         );
     }
+
+    @Transactional
+    public LoanResponse returnLoanResponse(Long loanId, String username) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Выдача не найдена"
+                        ));
+
+        if (!loan.getUser().getUsername().equals(username)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Нельзя вернуть чужую выдачу"
+            );
+        }
+
+        if (loan.getReturnedAt() != null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Книга уже возвращена"
+            );
+        }
+
+        loan.returnBook(OffsetDateTime.now());
+        Loan savedLoan = loanRepository.save(loan);
+
+        return new LoanResponse(
+                savedLoan.getId(),
+                savedLoan.getBookInstance().getId(),
+                savedLoan.getUser().getUsername(),
+                savedLoan.getLoanedAt(),
+                savedLoan.getReturnedAt()
+        );
+    }
 }

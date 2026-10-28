@@ -28,7 +28,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 @ActiveProfiles("test")
-@WebMvcTest({BookController.class, LoanController.class})
+@WebMvcTest({
+        BookController.class,
+        LoanController.class,
+        BookInstanceController.class
+})
 @Import(SecurityConfig.class)
 class BookControllerTest {
 
@@ -43,6 +47,9 @@ class BookControllerTest {
 
     @MockitoBean
     private AppUserDetailsService appUserDetailsService;
+
+    @MockitoBean
+    private BookInstanceService bookInstanceService;
 
     @Test
     void shouldReturnBooks() throws Exception{
@@ -225,5 +232,83 @@ class BookControllerTest {
                 .andExpect(jsonPath("$.returnedAt").doesNotExist());
 
         verify(loanService).createLoanResponse(10L, "reader");
+    }
+
+    @Test
+    void shouldRejectUnauthenticatedReturn() throws Exception {
+        mockMvc.perform(post("/loans/30/return"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(loanService);
+    }
+
+    @Test
+    @WithMockUser(username = "reader", roles = "USER")
+    void shouldReturnLoanForAuthenticatedUser() throws Exception {
+        LoanResponse response = new LoanResponse(
+                30L,
+                10L,
+                "reader",
+                java.time.OffsetDateTime.parse("2026-10-27T12:00:00Z"),
+                java.time.OffsetDateTime.parse("2026-10-28T12:00:00Z")
+        );
+
+        when(loanService.returnLoanResponse(30L, "reader"))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/loans/30/return"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(30))
+                .andExpect(jsonPath("$.username").value("reader"))
+                .andExpect(jsonPath("$.returnedAt").exists());
+
+        verify(loanService).returnLoanResponse(30L, "reader");
+    }
+
+    @Test
+    void shouldRejectUnauthenticatedInstanceCreation() throws Exception {
+        CreateBookInstanceRequest request =
+                new CreateBookInstanceRequest("INV-001");
+
+        mockMvc.perform(post("/books/1/instances")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(bookInstanceService);
+    }
+
+    @Test
+    @WithMockUser(username = "reader", roles = "USER")
+    void shouldRejectInstanceCreationForNonAdmin() throws Exception {
+        CreateBookInstanceRequest request =
+                new CreateBookInstanceRequest("INV-001");
+
+        mockMvc.perform(post("/books/1/instances")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(bookInstanceService);
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void shouldCreateBookInstanceForAdmin() throws Exception {
+        CreateBookInstanceRequest request =
+                new CreateBookInstanceRequest("INV-001");
+
+        when(bookInstanceService.createResponse(1L, "INV-001"))
+                .thenReturn(new BookInstanceResponse(10L, 1L, "INV-001"));
+
+        mockMvc.perform(post("/books/1/instances")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.bookId").value(1))
+                .andExpect(jsonPath("$.inventoryNumber").value("INV-001"));
+
+        verify(bookInstanceService).createResponse(1L, "INV-001");
     }
 }

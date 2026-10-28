@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -58,6 +59,9 @@ class BookApiApplicationTests {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     @Transactional
@@ -204,6 +208,93 @@ class BookApiApplicationTests {
         mockMvc.perform(post("/book-instances/{id}/loans", instance.getId())
                 .with(httpBasic("reader", "reader123")))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void shouldReturnLoanAndAllowSameInstanceToBeLoanedAgain() throws Exception {
+        Book book = bookRepository.saveAndFlush(new Book(null, "Effective Java", "Joshua Bloch"));
+
+        BookInstance instance = bookInstanceRepository.saveAndFlush(new BookInstance(null, book, "INV-RETURN-001"));
+
+        String firstLoanResponse = mockMvc.perform(
+                post("/book-instances/{id}/loans", instance.getId())
+                        .with(httpBasic("reader", "reader123"))
+        )
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        long loanId = objectMapper
+                .readTree(firstLoanResponse)
+                .get("id")
+                .asLong();
+
+        mockMvc.perform(
+                post("/loans/{loanId}/return", loanId)
+                        .with(httpBasic("reader", "reader123"))
+        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.returnedAt").exists());
+
+        mockMvc.perform(
+                post("/book-instances/{id}/loans", instance.getId())
+                        .with(httpBasic("reader", "reader123"))
+        )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.bookInstanceId").value(instance.getId()))
+                .andExpect(jsonPath("$.returnedAt").doesNotExist());
+    }
+
+    @Test
+    void shouldAllowAdminToCreateInstanceThenReaderToLoanAndReturnIt() throws Exception {
+        Book book = bookRepository.saveAndFlush(new Book(null, "Clean Code", "Robert Martin"));
+
+        String instanceResponse = mockMvc.perform(
+                post("/books/{bookId}/instances", book.getId())
+                        .with(httpBasic("admin", "admin123"))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                    "inventoryNumber": "INV-ADMIN-001"
+                                }
+                                """)
+        )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.bookId").value(book.getId()))
+                .andExpect(jsonPath("$.inventoryNumber")
+                        .value("INV-ADMIN-001"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        long instanceId = objectMapper
+                .readTree(instanceResponse)
+                .get("id")
+                .asLong();
+
+        String loanResponse = mockMvc.perform(
+                post("/book-instances/{id}/loans", instanceId)
+                        .with(httpBasic("reader", "reader123"))
+        )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.bookInstanceId").value(instanceId))
+                .andExpect(jsonPath("$.username").value("reader"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        long loanId = objectMapper
+                .readTree(loanResponse)
+                .get("id")
+                .asLong();
+
+        mockMvc.perform(
+                post("/loans/{loanId}/return", loanId)
+                        .with(httpBasic("reader", "reader123"))
+        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.returnedAt").exists());
     }
 
 }

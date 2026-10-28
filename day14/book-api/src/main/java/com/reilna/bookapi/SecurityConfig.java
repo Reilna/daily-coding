@@ -1,6 +1,7 @@
 package com.reilna.bookapi;
 
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -39,6 +40,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/books/**")
                         .hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/books/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/books/{bookId}/instances")
                         .hasRole("ADMIN")
                         .anyRequest()
                         .authenticated()

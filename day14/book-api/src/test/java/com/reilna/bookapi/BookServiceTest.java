@@ -14,14 +14,11 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.in;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -144,7 +141,7 @@ class BookServiceTest {
         when(loanRepository.findByBookInstanceIdAndReturnedAtIsNull(10L))
                 .thenReturn(Optional.empty());
         when(loanRepository.save(org.mockito.ArgumentMatchers.any(Loan.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> invocation.getArgument    (0));
 
         LoanService loanService = new LoanService(
                 bookInstanceRepository,
@@ -192,6 +189,106 @@ class BookServiceTest {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
                 () -> loanService.createLoan(10L, "reader")
+        );
+
+        assertEquals(409, exception.getStatusCode().value());
+        verify(loanRepository, org.mockito.Mockito.never())
+                .save(org.mockito.ArgumentMatchers.any(Loan.class));
+    }
+
+    @Test
+    void shouldReturnOwnActiveLoan() {
+        Book book = new Book(1L, "Effective Java", "Joshua Bloch");
+        BookInstance instance = new BookInstance(10L, book, "INV-001");
+        AppUser user = new AppUser(20L, "reader", "hash", "USER");
+
+        Loan loan = new Loan(
+                30L,
+                instance,
+                user,
+                OffsetDateTime.now().minusDays(1),
+                null
+        );
+
+        when(loanRepository.findById(30L))
+                .thenReturn(Optional.of(loan));
+        when(loanRepository.save(loan))
+                .thenReturn(loan);
+
+        LoanService loanService = new LoanService(
+                bookInstanceRepository,
+                appUserRepository,
+                loanRepository
+        );
+
+        LoanResponse result = loanService.returnLoanResponse(30L, "reader");
+
+        assertThat(result.id()).isEqualTo(30L);
+        assertThat(result.username()).isEqualTo("reader");
+        assertThat(result.returnedAt()).isNotNull();
+
+        verify(loanRepository).save(loan);
+    }
+
+    @Test
+    void shouldRejectReturningAnotherUsersLoan() {
+        Book book = new Book(1L, "Effective Java", "Joshua Bloch");
+        BookInstance instance = new BookInstance(10L, book, "INV-001");
+        AppUser owner = new AppUser(20L, "reader", "hash", "USER");
+
+        Loan loan = new Loan(
+                30L,
+                instance,
+                owner,
+                OffsetDateTime.now(),
+                null
+        );
+
+        when(loanRepository.findById(30L))
+                .thenReturn(Optional.of(loan));
+
+        LoanService loanService = new LoanService(
+                bookInstanceRepository,
+                appUserRepository,
+                loanRepository
+        );
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> loanService.returnLoanResponse(30L, "other-user")
+        );
+
+        assertEquals(403, exception.getStatusCode().value());
+        verify(loanRepository, org.mockito.Mockito.never())
+                .save(org.mockito.ArgumentMatchers.any(Loan.class));
+    }
+
+    @Test
+    void shouldRejectReturningAlreadyReturnedLoan() {
+        Book book = new Book(1L, "Effective Java", "Joshua Bloch");
+        BookInstance instance = new BookInstance(10L, book, "INV-001");
+        AppUser user = new AppUser(20L, "reader", "hash", "USER");
+
+        Loan loan = new Loan(
+                30L,
+                instance,
+                user,
+                OffsetDateTime.now().minusDays(2),
+                OffsetDateTime.now().minusDays(1)
+        );
+
+        when(loanRepository.findById(30L))
+                .thenReturn(Optional.of(loan));
+
+        LoanService loanService = new LoanService(
+                bookInstanceRepository,
+                appUserRepository,
+                loanRepository
+        );
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> loanService.returnLoanResponse(30L, "reader")
         );
 
         assertEquals(409, exception.getStatusCode().value());
